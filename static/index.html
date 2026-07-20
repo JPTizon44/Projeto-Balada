@@ -12,34 +12,7 @@
 </head>
 <body>
 
-    <!-- PAINEL DO SIMULADOR (Para teste rápido e demonstração) -->
-    <div id="sim-control-panel">
-        <div class="sim-header">
-            <span>🛠️ Painel do Simulador</span>
-            <button id="toggle-sim-btn">Recolher</button>
-        </div>
-        <div class="sim-body" id="sim-panel-body">
-            <p>Simule a aproximação de celulares em diferentes copos NFC:</p>
-            <div class="sim-cups-grid">
-                <button onclick="simulateNfcTap('cup_user1')">Copo Novo 1</button>
-                <button onclick="simulateNfcTap('cup_user2')">Copo Novo 2</button>
-                <button onclick="simulateNfcTap('cup_mock1')">Copo Carol (Mock)</button>
-                <button onclick="simulateNfcTap('cup_mock2')">Copo Mateus (Mock)</button>
-            </div>
-            <div class="sim-actions" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                <div style="display: flex; gap: 4px;">
-                    <input type="text" id="sim-promo-text" placeholder="Ex: Double Beer!" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; background: rgba(0,0,0,0.3); color: white;">
-                    <button id="sim-trigger-promo-btn" style="font-size: 11px; padding: 4px; cursor: pointer;">Disparar Promo</button>
-                </div>
-                <button id="sim-draw-prize-btn" class="success" style="font-size: 11px; padding: 6px; cursor: pointer; background: #2a9d8f; color: white; border: none; border-radius: 4px; font-weight: bold;">Sortear Casal Premiado 🎁</button>
 
-                <div style="display: flex; gap: 4px;">
-                    <button id="sim-toggle-event-btn" class="danger" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Alternar Evento</button>
-                    <button id="sim-reset-btn" class="warning" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Limpar BD</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- NOTIFICAÇÃO PUSH DENTRO DO APP (Brindes recebidos) -->
     <div id="app-notification" class="hidden">
