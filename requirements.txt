@@ -1,2 +1,2 @@
-http.server
-pyngrok
+# http.server já vem com Python, não precisa instalar
+# Deixar este arquivo vazio ou só com comentário é suficiente
