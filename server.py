@@ -21,68 +21,7 @@ state = {
     "winning_matches": {}, # match_id -> voucher_code
 }
 
-# Pre-populated mock profiles for a lively event simulation
-MOCK_PROFILES = {
-    "cup_mock1": {
-        "id": "cup_mock1",
-        "name": "Carol",
-        "age": 23,
-        "clothes": "Vestido preto brilhante e jaqueta jeans rasgada",
-        "instagram": "@carol_vibe",
-        "avatar": "/static/images/carol.png",
-        "location": "VIP",
-        "vibe": "Paquerar",
-        "active": True
-    },
-    "cup_mock2": {
-        "id": "cup_mock2",
-        "name": "Mateus",
-        "age": 25,
-        "clothes": "Camiseta preta do Daft Punk e boné virado",
-        "instagram": "@mateus.music",
-        "avatar": "/static/images/mateus.png",
-        "location": "Pista",
-        "vibe": "Dançar",
-        "active": True
-    },
-    "cup_mock3": {
-        "id": "cup_mock3",
-        "name": "Juliana",
-        "age": 22,
-        "clothes": "Top prata holográfico e maquiagem neon",
-        "instagram": "@juju_dance",
-        "avatar": "/static/images/juliana.png",
-        "location": "Pista",
-        "vibe": "Paquerar",
-        "active": True
-    },
-    "cup_mock4": {
-        "id": "cup_mock4",
-        "name": "Rodrigo",
-        "age": 27,
-        "clothes": "Camisa aberta estampada florida e óculos escuros",
-        "instagram": "@rodrigo.party",
-        "avatar": "/static/images/rodrigo.png",
-        "location": "Bar",
-        "vibe": "Amigos",
-        "active": True
-    },
-    "cup_mock5": {
-        "id": "cup_mock5",
-        "name": "DJ Kael",
-        "age": 28,
-        "clothes": "Moletom preto oversized com fone neon no pescoço",
-        "instagram": "@djkael_oficial",
-        "avatar": "/static/images/kael.png",
-        "location": "Palco",
-        "vibe": "Dançar",
-        "active": True
-    }
-}
 
-# Add mock profiles to state
-for k, v in MOCK_PROFILES.items():
-    state["users"][k] = v
 
 class CopoSocialRequestHandler(http.server.BaseHTTPRequestHandler):
     
@@ -687,17 +626,17 @@ class CopoSocialRequestHandler(http.server.BaseHTTPRequestHandler):
             self.send_json({"success": True, "event_active": state["event_active"]})
             return
 
-        # 10. Reset all data (Simulation Endpoint)
+        # 10. Reset all data
         elif path == '/api/admin/reset':
             state["users"] = {}
             state["cheers"] = set()
             state["matches"] = {}
             state["messages"] = {}
             state["mural_messages"] = []
+            state["gallery_photos"] = []
             state["active_promo"] = None
+            state["active_announcement"] = None
             state["winning_matches"] = {}
-            for k, v in MOCK_PROFILES.items():
-                state["users"][k] = v
             self.send_json({"success": True, "message": "State reset successful"})
             return
 
