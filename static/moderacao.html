@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moderação — Projeto Balada</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-pink: #ff2a74;
+            --neon-cyan: #05f9e2;
+            --neon-purple: #8a2be2;
+            --bg-dark: #0a0a0f;
+            --card-bg: rgba(255,255,255,0.04);
+            --text-muted: rgba(255,255,255,0.45);
+            --font-body: 'Inter', sans-serif;
+            --font-heading: 'Outfit', sans-serif;
+            --glow-pink: 0 0 20px rgba(255,42,116,0.4);
+            --glow-cyan: 0 0 20px rgba(5,249,226,0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-dark);
+            color: #fff;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(138,43,226,0.08) 0%, transparent 60%),
+                              radial-gradient(ellipse at 80% 20%, rgba(255,42,116,0.06) 0%, transparent 50%);
+        }
+
+        /* ---- TELA DE LOGIN ---- */
+        #login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .login-icon { font-size: 56px; display: block; margin-bottom: 16px; }
+
+        .login-card h1 {
+            font-family: var(--font-heading);
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-card p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        .login-input {
+            width: 100%;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 18px;
+            padding: 14px 16px;
+            font-family: var(--font-body);
+            text-align: center;
+            letter-spacing: 3px;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 14px;
+        }
+        .login-input:focus { border-color: var(--neon-cyan); }
+        .login-input::placeholder { letter-spacing: 0; font-size: 14px; }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+            color: #fff;
+            font-family: var(--font-heading);
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            box-shadow: var(--glow-pink);
+        }
+        .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-login:active { transform: translateY(0); }
+
+        .login-error {
+            color: var(--neon-pink);
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        /* ---- PAINEL PRINCIPAL ---- */
+        #mod-panel { display: none; }
+
+        .mod-header {
+            background: rgba(0,0,0,0.6);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .mod-header-left { display: flex; align-items: center; gap: 10px; }
+        .mod-header-logo { font-size: 20px; font-family: var(--font-heading); font-weight: 800; }
+        .mod-badge {
+            background: rgba(255,42,116,0.15);
+            border: 1px solid rgba(255,42,116,0.3);
+            color: var(--neon-pink);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-logout {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-logout:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+        .mod-content {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 20px 16px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mod-section {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 18px;
+            padding: 18px;
+        }
+
+        .mod-section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        @media (min-width: 480px) {
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+
+        .stat-card {
+            border-radius: 12px;
+            padding: 14px 10px;
+            text-align: center;
+        }
+        .stat-num {
+            font-size: 28px;
+            font-weight: 800;
+            display: block;
+            font-family: var(--font-heading);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        .stat-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+
+        /* Forms */
+        textarea, input[type="text"] {
+            width: 100%;
+            background: rgba(0,0,0,0.35);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: #fff;
+            padding: 12px 14px;
+            font-family: var(--font-body);
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            resize: none;
+        }
+        textarea:focus, input[type="text"]:focus { border-color: var(--neon-cyan); }
+        textarea::placeholder, input::placeholder { color: var(--text-muted); }
+
+        .btn-primary {
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); }
+
+        .btn-secondary {
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { border-color: rgba(255,255,255,0.35); color: #fff; }
+
+        .row { display: flex; gap: 8px; align-items: stretch; }
+        .row .grow { flex: 1; }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #111;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 9999;
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: rgba(5,249,226,0.4); color: var(--neon-cyan); }
+        .toast.error { border-color: rgba(255,42,116,0.4); color: var(--neon-pink); }
+
+        .active-announcement-preview {
+            background: linear-gradient(135deg, rgba(255,42,116,0.12), rgba(5,249,226,0.06));
+            border: 1px solid rgba(255,42,116,0.3);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+        .active-announcement-preview strong { color: var(--neon-pink); }
+
+        @keyframes heartbeat {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .pulse { animation: heartbeat 1.4s infinite alternate; }
+    </style>
+</head>
+<body>
+
+<!-- ======= TELA DE LOGIN ======= -->
+<div id="login-screen">
+    <div class="login-card">
+        <span class="login-icon">🛡️</span>
+        <h1>Painel do Moderador</h1>
+        <p>Acesso restrito à organização do evento</p>
+
+        <input
+            type="password"
+            id="password-input"
+            class="login-input"
+            placeholder="Digite a senha"
+            autocomplete="off"
+        >
+        <button class="btn-login" onclick="checkPassword()">Entrar no Painel 🔐</button>
+        <p class="login-error" id="login-error">❌ Senha incorreta. Tente novamente.</p>
+    </div>
+</div>
+
+<!-- ======= PAINEL PRINCIPAL ======= -->
+<div id="mod-panel">
+
+    <header class="mod-header">
+        <div class="mod-header-left">
+            <span class="mod-header-logo">🍸 Projeto Balada</span>
+            <span class="mod-badge">Moderador</span>
+        </div>
+        <button class="btn-logout" onclick="logout()">Sair 🔒</button>
+    </header>
+
+    <div class="mod-content">
+
+        <!-- STATS AO VIVO -->
+        <div class="mod-section">
+            <div class="mod-section-title" style="color: var(--neon-cyan);">📊 Estatísticas ao Vivo</div>
+            <div class="stats-grid">
+                <div class="stat-card" style="background: rgba(5,249,226,0.07); border: 1px solid rgba(5,249,226,0.2);">
+                    <span class="stat-num" style="color: var(--neon-cyan);" id="stat-users">—</span>
+                    <span class="stat-lbl">Pessoas Online</span>
+                </div>
+                <div class="stat-card" style="background: rgba(255,42,116,0.07); border: 1px solid rgba(255,42,116,0.2);">
+                    <span class="stat-num" style="color: var(--neon-pink);" id="stat-matches">—</span>
+                    <span class="stat-lbl">Brindes Feitos</span>
+                </div>
+                <div class="stat-card" style="background: rgba(255,180,0,0.07); border: 1px solid rgba(255,180,0,0.2);">
+                    <span class="stat-num" style="color: #FFB400;" id="stat-photos">—</span>
+                    <span class="stat-lbl">Fotos Enviadas</span>
+                </div>
+                <div class="stat-card" style="background: rgba(150,100,255,0.07); border: 1px solid rgba(150,100,255,0.2);">
+                    <span class="stat-num" style="color: #9664FF;" id="stat-messages">—</span>
+                    <span class="stat-lbl">Recados no Mural</span>
+                </div>
+            </div>
+            <button class="btn-secondary" style="width: 100%; margin-top: 12px;" onclick="loadStats()">🔄 Atualizar</button>
+        </div>
+
+        <!-- COMUNICADO GERAL -->
+        <div class="mod-section">
+            <div class="mod-section-title" style="color: var(--neon-pink);">📢 Comunicado para Todos</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">O aviso aparece instantaneamente para TODOS os usuários e fica na aba "Avisos" deles.</p>
+            <textarea id="announcement-text" rows="3" placeholder="Ex: DJ Kael entra em 5 minutos! 🎧 Corram para a pista!"></textarea>
+            <div class="active-announcement-preview" id="active-preview">
+                <strong>📢 Aviso ativo agora:</strong> <span id="active-preview-text"></span>
+            </div>
+            <div class="row" style="margin-top: 10px;">
+                <button class="btn-primary grow" style="background: var(--neon-cyan); color: #000;" onclick="sendAnnouncement()">Enviar para Todos 📢</button>
+                <button class="btn-secondary" onclick="clearAnnouncement()" title="Limpar aviso ativo">🗑️</button>
+            </div>
+        </div>
+
+        <!-- PROMOÇÃO RELÂMPAGO -->
+        <div class="mod-section">
+            <div class="mod-section-title" style="color: #FFB400;">🔥 Promoção Relâmpago</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Dispara um popup de promoção nos celulares de todos os usuários.</p>
+            <div class="row">
+                <input type="text" id="promo-text" class="grow" placeholder="Ex: Double Beer por 20 minutos! 🍺">
+                <button class="btn-primary" style="background: #FFB400; color: #000; white-space: nowrap;" onclick="triggerPromo()">🔥 Disparar</button>
+            </div>
+        </div>
+
+        <!-- SORTEIO DE CASAL -->
+        <div class="mod-section">
+            <div class="mod-section-title" style="color: #2a9d8f;">🏆 Sortear Casal Premiado</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">Sorteia aleatoriamente um casal que fez brinde. Eles recebem uma notificação com o prêmio no celular!</p>
+            <button class="btn-primary" style="width: 100%; background: #2a9d8f;" onclick="drawPrize()">🎁 Sortear Casal Agora</button>
+            <div id="prize-result" style="display:none; margin-top: 12px; background: rgba(42,157,143,0.1); border: 1px solid rgba(42,157,143,0.3); border-radius: 10px; padding: 14px; text-align: center;">
+                <p style="font-size: 13px; color: var(--text-muted);">Casal Sorteado:</p>
+                <p id="prize-names" style="font-size: 18px; font-weight: 800; color: #2a9d8f; margin: 6px 0;"></p>
+                <p style="font-size: 12px; color: var(--text-muted);">Código do voucher:</p>
+                <p id="prize-voucher" style="font-size: 22px; font-weight: 800; color: var(--neon-cyan); letter-spacing: 2px;"></p>
+            </div>
+        </div>
+
+        <!-- CONTROLE DO EVENTO -->
+        <div class="mod-section">
+            <div class="mod-section-title" style="color: rgba(255,255,255,0.6);">⚙️ Controle do Evento</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn-secondary" id="btn-toggle-event" onclick="toggleEvent()" style="border-color: rgba(255,42,116,0.4); color: var(--neon-pink);">⏸️ Encerrar / Reabrir Evento</button>
+                <button class="btn-secondary" onclick="if(confirm('Tem certeza? Isso apaga TODOS os dados!')) resetData()" style="color: rgba(255,255,255,0.4); font-size: 12px;">🗑️ Limpar todos os dados</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SENHA = 'vaicomecarabrincadeira';
+const API = '';
+
+// ---- AUTENTICAÇÃO ----
+function checkPassword() {
+    const val = document.getElementById('password-input').value;
+    if (val === SENHA) {
+        sessionStorage.setItem('mod_auth', '1');
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('mod-panel').style.display = 'block';
+        loadStats();
+        loadActiveAnnouncement();
+        // Auto-refresh a cada 30s
+        setInterval(loadStats, 30000);
+    } else {
+        const err = document.getElementById('login-error');
+        err.style.display = 'block';
+        document.getElementById('password-input').value = '';
+        document.getElementById('password-input').classList.add('shake');
+        setTimeout(() => document.getElementById('password-input').classList.remove('shake'), 400);
+    }
+}
+
+document.getElementById('password-input').addEventListener('keypress', e => {
+    if (e.key === 'Enter') checkPassword();
+});
+
+function logout() {
+    sessionStorage.removeItem('mod_auth');
+    document.getElementById('mod-panel').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('password-input').value = '';
+}
+
+// Manter sessão ao recarregar
+if (sessionStorage.getItem('mod_auth') === '1') {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('mod-panel').style.display = 'block';
+    loadStats();
+    loadActiveAnnouncement();
+    setInterval(loadStats, 30000);
+}
+
+// ---- TOAST ----
+function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `toast ${type} show`;
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ---- STATS ----
+async function loadStats() {
+    try {
+        const r = await fetch(`${API}/api/stats`);
+        const data = await r.json();
+        document.getElementById('stat-users').textContent = data.users_count ?? '—';
+        document.getElementById('stat-matches').textContent = data.matches_count ?? '—';
+        document.getElementById('stat-photos').textContent = (data.gallery_photos ?? []).length;
+        document.getElementById('stat-messages').textContent = (data.mural_messages ?? []).length;
+    } catch(e) {
+        console.error('Erro ao carregar stats', e);
+    }
+}
+
+// ---- COMUNICADO ----
+async function loadActiveAnnouncement() {
+    try {
+        const r = await fetch(`${API}/api/stats`);
+        const data = await r.json();
+        if (data.announcement) {
+            document.getElementById('active-preview').style.display = 'block';
+            document.getElementById('active-preview-text').textContent = data.announcement.text;
+        }
+    } catch(e) {}
+}
+
+async function sendAnnouncement() {
+    const text = document.getElementById('announcement-text').value.trim();
+    if (!text) { showToast('❌ Escreva um aviso primeiro!', 'error'); return; }
+
+    try {
+        const r = await fetch(`${API}/api/admin/trigger-announcement`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('✅ Comunicado enviado para todos!');
+            document.getElementById('announcement-text').value = '';
+            document.getElementById('active-preview').style.display = 'block';
+            document.getElementById('active-preview-text').textContent = text;
+        }
+    } catch(e) {
+        showToast('❌ Erro ao enviar comunicado', 'error');
+    }
+}
+
+async function clearAnnouncement() {
+    try {
+        await fetch(`${API}/api/admin/clear-announcement`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        document.getElementById('active-preview').style.display = 'none';
+        showToast('🗑️ Comunicado removido');
+    } catch(e) {
+        showToast('❌ Erro ao remover', 'error');
+    }
+}
+
+// ---- PROMOÇÃO ----
+async function triggerPromo() {
+    const text = document.getElementById('promo-text').value.trim();
+    if (!text) { showToast('❌ Escreva a promoção primeiro!', 'error'); return; }
+
+    try {
+        const r = await fetch(`${API}/api/admin/trigger-promo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, duration: 600 })
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('🔥 Promoção disparada para todos!');
+            document.getElementById('promo-text').value = '';
+        }
+    } catch(e) {
+        showToast('❌ Erro ao disparar promoção', 'error');
+    }
+}
+
+// ---- SORTEIO ----
+async function drawPrize() {
+    try {
+        const r = await fetch(`${API}/api/admin/draw-prize`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        const data = await r.json();
+        if (data.success) {
+            document.getElementById('prize-result').style.display = 'block';
+            document.getElementById('prize-names').textContent = '🏆 ' + data.winner_names;
+            document.getElementById('prize-voucher').textContent = data.voucher;
+            showToast('🎁 Casal sorteado! Eles foram notificados.');
+        } else {
+            showToast('❌ ' + (data.error || 'Nenhum brinde registrado ainda'), 'error');
+        }
+    } catch(e) {
+        showToast('❌ Erro ao sortear', 'error');
+    }
+}
+
+// ---- CONTROLE DO EVENTO ----
+async function toggleEvent() {
+    try {
+        const r = await fetch(`${API}/api/admin/toggle-event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        const data = await r.json();
+        const status = data.event_active ? '✅ Evento ATIVO' : '🔴 Evento ENCERRADO';
+        showToast(status);
+    } catch(e) {
+        showToast('❌ Erro ao alternar evento', 'error');
+    }
+}
+
+async function resetData() {
+    try {
+        const r = await fetch(`${API}/api/admin/reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        const data = await r.json();
+        if (data.success) {
+            showToast('🗑️ Dados apagados com sucesso');
+            loadStats();
+        }
+    } catch(e) {
+        showToast('❌ Erro ao limpar dados', 'error');
+    }
+}
+</script>
+</body>
+</html>

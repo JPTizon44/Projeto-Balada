@@ -120,6 +120,15 @@ class CopoSocialRequestHandler(http.server.BaseHTTPRequestHandler):
                 self.send_error(404, "File Not Found")
             return
 
+        # Rota exclusiva do moderador → serve moderacao.html separado
+        if path == '/moderacao':
+            mod_path = os.path.join(STATIC_DIR, 'moderacao.html')
+            if os.path.isfile(mod_path):
+                self.serve_file(mod_path)
+            else:
+                self.send_error(404, "Moderacao page not found")
+            return
+
         # SPA Routing: Any other path (like /copo/XYZ, /telao, /barman, /) serves index.html
         index_path = os.path.join(STATIC_DIR, 'index.html')
         if os.path.isfile(index_path):
