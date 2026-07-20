@@ -59,10 +59,12 @@ function initApp() {
     // 1. Fechar simulador se clicar no botão
     const toggleSimBtn = document.getElementById("toggle-sim-btn");
     const simPanel = document.getElementById("sim-control-panel");
-    toggleSimBtn.addEventListener("click", () => {
-        simPanel.classList.toggle("collapsed");
-        toggleSimBtn.innerText = simPanel.classList.contains("collapsed") ? "Abrir Painel" : "Recolher";
-    });
+    if (toggleSimBtn && simPanel) {
+        toggleSimBtn.addEventListener("click", () => {
+            simPanel.classList.toggle("collapsed");
+            toggleSimBtn.innerText = simPanel.classList.contains("collapsed") ? "Abrir Painel" : "Recolher";
+        });
+    }
 
     // 2. Tratar URLs no carregamento (Router SPA)
     handleUrlRouting();
@@ -136,13 +138,25 @@ function changeScreen(screenId) {
 
 // Configurar ouvintes de eventos HTML
 function setupEventHandlers() {
+    // Conectar sem copo (Digital)
+    const btnEnterDigital = document.getElementById("btn-enter-digital");
+    if (btnEnterDigital) {
+        btnEnterDigital.addEventListener("click", () => {
+            const randomId = "digital_" + Math.floor(100000 + Math.random() * 900000);
+            simulateNfcTap(randomId);
+        });
+    }
+
     // Conectar manualmente
-    document.getElementById("manual-scan-btn").addEventListener("click", () => {
-        const inputId = document.getElementById("manual-cup-id").value.trim();
-        if (inputId) {
-            simulateNfcTap(inputId);
-        }
-    });
+    const manualScanBtn = document.getElementById("manual-scan-btn");
+    if (manualScanBtn) {
+        manualScanBtn.addEventListener("click", () => {
+            const inputId = document.getElementById("manual-cup-id").value.trim();
+            if (inputId) {
+                simulateNfcTap(inputId);
+            }
+        });
+    }
 
     // Submissão do Formulário de Registro
     document.getElementById("register-form").addEventListener("submit", (e) => {
@@ -458,8 +472,11 @@ function setupEventHandlers() {
     }
 
     // Botões Admin do Simulador
-    document.getElementById("sim-trigger-promo-btn").addEventListener("click", simTriggerPromo);
-    document.getElementById("sim-draw-prize-btn").addEventListener("click", simDrawPrize);
+    const simTriggerPromoBtn = document.getElementById("sim-trigger-promo-btn");
+    if (simTriggerPromoBtn) simTriggerPromoBtn.addEventListener("click", simTriggerPromo);
+    
+    const simDrawPrizeBtn = document.getElementById("sim-draw-prize-btn");
+    if (simDrawPrizeBtn) simDrawPrizeBtn.addEventListener("click", simDrawPrize);
 
     // Botões do Painel de Moderação (Comunicados)
     const btnModSendAnnounce = document.getElementById("btn-mod-send-announcement");
@@ -470,12 +487,20 @@ function setupEventHandlers() {
     }
 
     // Fechar Modais
-    document.getElementById("btn-close-promo").addEventListener("click", () => {
-        document.getElementById("promo-modal").classList.add("hidden");
-    });
-    document.getElementById("btn-close-prize").addEventListener("click", () => {
-        document.getElementById("prize-modal").classList.add("hidden");
-    });
+    const btnClosePromo = document.getElementById("btn-close-promo");
+    if (btnClosePromo) {
+        btnClosePromo.addEventListener("click", () => {
+            document.getElementById("promo-modal").classList.add("hidden");
+        });
+    }
+    
+    const btnClosePrize = document.getElementById("btn-close-prize");
+    if (btnClosePrize) {
+        btnClosePrize.addEventListener("click", () => {
+            document.getElementById("prize-modal").classList.add("hidden");
+        });
+    }
+    
     const btnCloseAnnounce = document.getElementById("btn-close-announcement");
     if (btnCloseAnnounce) {
         btnCloseAnnounce.addEventListener("click", () => {
@@ -485,8 +510,11 @@ function setupEventHandlers() {
     }
 
     // Controles do simulador (API direto)
-    document.getElementById("sim-toggle-event-btn").addEventListener("click", toggleEventStatus);
-    document.getElementById("sim-reset-btn").addEventListener("click", resetDatabase);
+    const simToggleEventBtn = document.getElementById("sim-toggle-event-btn");
+    if (simToggleEventBtn) simToggleEventBtn.addEventListener("click", toggleEventStatus);
+    
+    const simResetBtn = document.getElementById("sim-reset-btn");
+    if (simResetBtn) simResetBtn.addEventListener("click", resetDatabase);
 }
 
 
