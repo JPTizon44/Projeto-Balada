@@ -495,7 +495,7 @@ class CopoSocialRequestHandler(http.server.BaseHTTPRequestHandler):
                 "id": msg_id,
                 "text": text,
                 "sender_name": state["users"].get(sender, {}).get("name", "Anônimo"),
-                "status": "rejected" if contains_bad_word else "pending",
+                "status": "rejected" if contains_bad_word else "approved",
                 "timestamp": int(time.time())
             }
 
@@ -523,7 +523,7 @@ class CopoSocialRequestHandler(http.server.BaseHTTPRequestHandler):
                 "sender_name": state["users"].get(sender, {}).get("name", "Anônimo"),
                 "image": image,
                 "timestamp": int(time.time()),
-                "status": "pending",
+                "status": "approved",
                 "cheers_count": 0,
                 "cheers_by": []
             }
