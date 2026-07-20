@@ -32,9 +32,7 @@
                     <button id="sim-trigger-promo-btn" style="font-size: 11px; padding: 4px; cursor: pointer;">Disparar Promo</button>
                 </div>
                 <button id="sim-draw-prize-btn" class="success" style="font-size: 11px; padding: 6px; cursor: pointer; background: #2a9d8f; color: white; border: none; border-radius: 4px; font-weight: bold;">Sortear Casal Premiado 🎁</button>
-                <div style="display: flex; gap: 4px;">
-                    <button onclick="changeScreen('screen-telao')" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Ver Telão 📺</button>
-                </div>
+
                 <div style="display: flex; gap: 4px;">
                     <button id="sim-toggle-event-btn" class="danger" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Alternar Evento</button>
                     <button id="sim-reset-btn" class="warning" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Limpar BD</button>
@@ -254,6 +252,18 @@
                 </div>
             </div>
 
+            <!-- FEED AO VIVO: FOTOS E RECADOS -->
+            <div id="pista-live-feed" style="margin: 0 12px 12px 12px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-top: 4px;">
+                    <span style="font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--neon-cyan);">⚡ Feed ao Vivo</span>
+                    <div style="flex:1; height:1px; background: rgba(255,255,255,0.06);"></div>
+                </div>
+                <div id="pista-feed-container" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Feed items renderizados pelo JS -->
+                    <div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 13px;">Nenhuma foto ou recado ainda. Seja o primeiro! 🎉</div>
+                </div>
+            </div>
+
             <!-- CARD EXPANDIDO / DETALHES DO PERFIL (MODAL) -->
             <div id="profile-detail-modal" class="modal hidden">
                 <div class="modal-content glass">
@@ -408,56 +418,7 @@
             </div>
         </section>
 
-        <!-- 5. TELA DE TELÃO DA BALADA (PAINEL PÚBLICO) -->
-        <section id="screen-telao" class="screen-full">
-            <div class="telao-bg"></div>
-            <div class="telao-container">
-                <header class="telao-header">
-                    <div class="telao-logo">🍸 Copo Social</div>
-                    <div class="telao-stats">
-                        <div class="stat-box">
-                            <span class="stat-num" id="telao-stat-users">0</span>
-                            <span class="stat-lbl">Conectados</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-num neon-pink-text" id="telao-stat-matches">0</span>
-                            <span class="stat-lbl">Brindes Confirmados 🥂</span>
-                        </div>
-                    </div>
-                </header>
 
-                <div id="telao-announcement-banner" class="hidden" style="background: linear-gradient(90deg, #ff2a74, #05f9e2); border: 2px solid #fff; box-shadow: 0 0 25px rgba(255,255,255,0.6); padding: 14px; border-radius: 12px; margin-bottom: 20px; font-weight: 800; font-size: 18px; color: #000; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; animation: heartbeat 1.5s infinite alternate;">
-                    📢 AVISO DA PRODUÇÃO: <span id="telao-announcement-text" style="color: #000;"></span>
-                </div>
-
-                <div class="telao-grid">
-                    <div class="telao-left">
-                        <h3>Pista de Bolhas ao Vivo</h3>
-                        <div class="telao-bubble-arena" id="telao-canvas-container">
-                            <canvas id="telao-canvas"></canvas>
-                        </div>
-                    </div>
-                    <div class="telao-right" style="display: flex; flex-direction: column; gap: 20px;">
-                        <div>
-                            <h3>Brindes Recentes 🥂</h3>
-                            <div class="telao-ticker" id="telao-ticker-container" style="max-height: 220px; overflow: hidden;">
-                                <!-- Tickers de brindes ao vivo -->
-                            </div>
-                        </div>
-                        <div>
-                            <h3>Galeria da Galera 📸</h3>
-                            <div id="telao-gallery-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;">
-                                <!-- 6 latest photos shown in big thumbnails -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <footer class="telao-footer">
-                    Aproxime o celular do seu copo e participe! coposocial.app
-                </footer>
-            </div>
-        </section>
 
         <!-- 6. TELA DO BARMAN (VALIDADOR DE DESCONTOS) -->
         <section id="screen-barman" class="screen">

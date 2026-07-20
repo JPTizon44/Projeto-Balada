@@ -717,6 +717,11 @@ async function pingServer() {
         } else {
             document.getElementById("announcement-modal").classList.add("hidden");
         }
+
+        // 7. Atualizar feed ao vivo na Pista
+        if (activeScreen === "screen-dashboard") {
+            loadPistaFeed();
+        }
     } catch (e) {
         console.error("Ping error:", e);
     }
@@ -811,6 +816,116 @@ function loadDashboardData() {
 
     // Inicializar Canvas de Bolhas
     setupDashboardBubblesCanvas();
+
+    // Carregar Feed ao vivo
+    loadPistaFeed();
+}
+
+// Feed ao vivo na Pista — mistura fotos e recados como um Instagram
+let pistaFeedInterval = null;
+let pistaFeedLastCount = 0;
+
+async function loadPistaFeed() {
+    try {
+        const [photosRes, muralRes] = await Promise.all([
+            fetch(`${API_BASE}/api/gallery`),
+            fetch(`${API_BASE}/api/mural`)
+        ]);
+        const photos = await photosRes.json();
+        const messages = await muralRes.json();
+
+        // Mistura e ordena por timestamp (mais recentes primeiro)
+        const feedItems = [
+            ...photos.map(p => ({ ...p, type: "photo" })),
+            ...messages.map(m => ({ ...m, type: "message" }))
+        ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 30);
+
+        const container = document.getElementById("pista-feed-container");
+        if (!container) return;
+
+        if (feedItems.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--text-muted); font-size: 14px;">Nenhuma foto ou recado ainda. Seja o primeiro! 🎉</div>`;
+            return;
+        }
+
+        // Só atualiza DOM se houve mudança
+        if (feedItems.length === pistaFeedLastCount) return;
+        pistaFeedLastCount = feedItems.length;
+
+        container.innerHTML = feedItems.map(item => {
+            const timeAgo = formatTimeAgo(item.timestamp);
+            if (item.type === "photo") {
+                const alreadyCheered = item.cheers_by && currentCupId && item.cheers_by.includes(currentCupId);
+                return `
+                <div style="background: var(--card-bg); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; overflow: hidden;">
+                    <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px 8px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple)); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">📸</div>
+                        <div>
+                            <p style="font-weight: 700; font-size: 14px;">${item.sender_name}</p>
+                            <p style="font-size: 11px; color: var(--text-muted);">${timeAgo}</p>
+                        </div>
+                    </div>
+                    <img src="${item.image}" alt="Foto da festa" style="width: 100%; max-height: 340px; object-fit: cover; display: block;">
+                    <div style="padding: 10px 14px; display: flex; align-items: center; gap: 10px;">
+                        <button onclick="cheerPhoto('${item.id}', this)" ${alreadyCheered ? 'disabled' : ''} style="
+                            background: ${alreadyCheered ? 'rgba(255,42,116,0.15)' : 'rgba(255,42,116,0.08)'};
+                            border: 1px solid ${alreadyCheered ? 'rgba(255,42,116,0.5)' : 'rgba(255,42,116,0.2)'};
+                            border-radius: 20px; padding: 6px 14px;
+                            color: ${alreadyCheered ? 'var(--neon-pink)' : 'rgba(255,255,255,0.6)'};
+                            font-size: 13px; font-weight: 700; cursor: ${alreadyCheered ? 'default' : 'pointer'};
+                            display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                            🥂 <span class="cheers-count-${item.id}">${item.cheers_count || 0}</span>
+                        </button>
+                        <span style="font-size: 11px; color: var(--text-muted);">${alreadyCheered ? 'Você brindou!' : 'Brindar à foto'}</span>
+                    </div>
+                </div>`;
+            } else {
+                return `
+                <div style="background: var(--card-bg); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 14px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">💬</div>
+                        <div>
+                            <p style="font-weight: 700; font-size: 14px;">${item.sender_name}</p>
+                            <p style="font-size: 11px; color: var(--text-muted);">${timeAgo}</p>
+                        </div>
+                    </div>
+                    <p style="font-size: 15px; color: #fff; line-height: 1.5; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 10px; border-left: 3px solid var(--neon-cyan);">${item.text}</p>
+                </div>`;
+            }
+        }).join('');
+
+    } catch (e) {
+        console.error("Erro ao carregar feed:", e);
+    }
+}
+
+async function cheerPhoto(photoId, btn) {
+    if (!currentCupId) return;
+    try {
+        const res = await fetch(`${API_BASE}/api/gallery/cheers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photo_id: photoId, cup_id: currentCupId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const countEl = btn.querySelector(`.cheers-count-${photoId}`);
+            if (countEl) countEl.textContent = data.cheers_count;
+            btn.style.background = "rgba(255,42,116,0.15)";
+            btn.style.borderColor = "rgba(255,42,116,0.5)";
+            btn.style.color = "var(--neon-pink)";
+            btn.disabled = true;
+            btn.nextElementSibling.textContent = "Você brindou!";
+        }
+    } catch (e) { console.error(e); }
+}
+
+function formatTimeAgo(timestamp) {
+    const diff = Math.floor(Date.now() / 1000) - timestamp;
+    if (diff < 60) return "agora mesmo";
+    if (diff < 3600) return `há ${Math.floor(diff/60)} min`;
+    if (diff < 86400) return `há ${Math.floor(diff/3600)}h`;
+    return `há ${Math.floor(diff/86400)}d`;
 }
 
 async function setupDashboardBubblesCanvas() {
