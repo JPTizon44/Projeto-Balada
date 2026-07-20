@@ -78,7 +78,8 @@ function handleUrlRouting() {
     
     // Rota: Telão da Balada
     if (path === "/telao") {
-        document.getElementById("sim-control-panel").style.display = "none"; // Esconde painel no telão
+        const simPanel = document.getElementById("sim-control-panel");
+        if (simPanel) simPanel.style.display = "none"; // Esconde painel no telão
         changeScreen("screen-telao");
         startTelaoView();
         return;
@@ -96,6 +97,20 @@ function handleUrlRouting() {
         const cupId = copoMatch[1];
         loginWithCup(cupId);
         return;
+    }
+
+    // Default: Se já tem cadastro salvo no navegador, entra direto no app
+    const localProfile = localStorage.getItem("copo_social_my_profile");
+    if (localProfile) {
+        try {
+            const profile = JSON.parse(localProfile);
+            if (profile && profile.id) {
+                loginWithCup(profile.id);
+                return;
+            }
+        } catch (e) {
+            console.error("Erro ao carregar perfil salvo:", e);
+        }
     }
 
     // Default: Tela de Scan
@@ -561,12 +576,36 @@ async function loginWithCup(cupId) {
             currentUser = null;
             changeScreen("screen-register");
             // Auto-preencher campo de ID se necessário
-            document.getElementById("manual-cup-id").value = cupId;
+            const manualInput = document.getElementById("manual-cup-id");
+            if (manualInput) {
+                manualInput.value = cupId;
+            }
+
+            // Auto-preenche o formulário se já existia perfil local anterior (ex: se o servidor reiniciou)
+            const savedProfile = localStorage.getItem("copo_social_my_profile");
+            if (savedProfile) {
+                try {
+                    const profile = JSON.parse(savedProfile);
+                    prefillRegisterForm(profile);
+                } catch (e) {
+                    console.error("Erro ao pré-preencher formulário:", e);
+                }
+            }
         }
     } catch (e) {
         console.error("Erro ao comunicar com o servidor:", e);
         alert("Erro de conexão com o servidor do Copo Social.");
     }
+}
+
+function prefillRegisterForm(profile) {
+    if (!profile) return;
+    if (document.getElementById("reg-name")) document.getElementById("reg-name").value = profile.name || "";
+    if (document.getElementById("reg-age")) document.getElementById("reg-age").value = profile.age || "";
+    if (document.getElementById("reg-location")) document.getElementById("reg-location").value = profile.location || "Pista";
+    if (document.getElementById("reg-vibe")) document.getElementById("reg-vibe").value = profile.vibe || "Amigos";
+    if (document.getElementById("reg-clothes")) document.getElementById("reg-clothes").value = profile.clothes || "";
+    if (document.getElementById("reg-instagram")) document.getElementById("reg-instagram").value = profile.instagram || "";
 }
 
 // Enviar Registro
