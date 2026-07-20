@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Copo Social - Rede Social Efêmera 🥂</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- PAINEL DO SIMULADOR (Para teste rápido e demonstração) -->
+    <div id="sim-control-panel">
+        <div class="sim-header">
+            <span>🛠️ Painel do Simulador</span>
+            <button id="toggle-sim-btn">Recolher</button>
+        </div>
+        <div class="sim-body" id="sim-panel-body">
+            <p>Simule a aproximação de celulares em diferentes copos NFC:</p>
+            <div class="sim-cups-grid">
+                <button onclick="simulateNfcTap('cup_user1')">Copo Novo 1</button>
+                <button onclick="simulateNfcTap('cup_user2')">Copo Novo 2</button>
+                <button onclick="simulateNfcTap('cup_mock1')">Copo Carol (Mock)</button>
+                <button onclick="simulateNfcTap('cup_mock2')">Copo Mateus (Mock)</button>
+            </div>
+            <div class="sim-actions" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; gap: 4px;">
+                    <input type="text" id="sim-promo-text" placeholder="Ex: Double Beer!" style="flex: 1; font-size: 11px; padding: 4px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; background: rgba(0,0,0,0.3); color: white;">
+                    <button id="sim-trigger-promo-btn" style="font-size: 11px; padding: 4px; cursor: pointer;">Disparar Promo</button>
+                </div>
+                <button id="sim-draw-prize-btn" class="success" style="font-size: 11px; padding: 6px; cursor: pointer; background: #2a9d8f; color: white; border: none; border-radius: 4px; font-weight: bold;">Sortear Casal Premiado 🎁</button>
+                <div style="display: flex; gap: 4px;">
+                    <button onclick="changeScreen('screen-moderacao'); loadModerationMessages();" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Moderação 🛡️</button>
+                    <button onclick="changeScreen('screen-telao')" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Ver Telão 📺</button>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                    <button id="sim-toggle-event-btn" class="danger" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Alternar Evento</button>
+                    <button id="sim-reset-btn" class="warning" style="font-size: 11px; padding: 4px; flex: 1; cursor: pointer;">Limpar BD</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICAÇÃO PUSH DENTRO DO APP (Brindes recebidos) -->
+    <div id="app-notification" class="hidden">
+        <div class="notification-content">
+            <span class="notification-icon">🥂</span>
+            <div class="notification-text">
+                <strong id="notif-title">Alguém brindou!</strong>
+                <span id="notif-desc">Retribua para abrir o chat.</span>
+            </div>
+            <button id="notif-action-btn">Brindar!</button>
+            <button id="notif-close-btn">&times;</button>
+        </div>
+    </div>
+
+    <!-- TELA DE COMEMORAÇÃO DE BRINDE CONFIRMADO (MATCH!) -->
+    <div id="match-celebration" class="hidden">
+        <div class="match-card glass">
+            <div class="match-sparkles"></div>
+            <h2 class="neon-text-pink">TIM-TIM! 🥂</h2>
+            <h3>Brinde Confirmado!</h3>
+            
+            <div class="match-avatars">
+                <div class="avatar-ring user-ring">
+                    <div class="avatar-holder" id="match-avatar-me"></div>
+                </div>
+                <div class="cheers-icon-float">🥂</div>
+                <div class="avatar-ring match-ring">
+                    <div class="avatar-holder" id="match-avatar-other"></div>
+                </div>
+            </div>
+            
+            <p>Você e <span id="match-name-other" class="highlight-text">Carol</span> brindaram!</p>
+            <p class="voucher-info">🍹 Apresentem esta tela no bar para ganhar <strong>Double Drink</strong>!</p>
+            
+            <div class="match-actions">
+                <button id="match-chat-btn" class="btn-primary">Enviar Mensagem</button>
+                <button id="match-close-btn" class="btn-secondary">Voltar para a Balada</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- APLICATIVO SPA -->
+    <div id="app">
+
+        <!-- 1. TELA DE BOAS-VINDAS / SCAN MOCK -->
+        <section id="screen-scan" class="screen active">
+            <div class="neon-globe-bg"></div>
+            <div class="scan-container">
+                <div class="brand">
+                    <span class="logo-emoji">🍸</span>
+                    <h1 class="logo-text">Copo<span>Social</span></h1>
+                    <p class="tagline">Conecte seu copo. Curta a noite. Faça contatos.</p>
+                </div>
+
+                <div class="nfc-scanner">
+                    <div class="scanner-circle">
+                        <div class="scanner-cup">🥂</div>
+                        <div class="pulse-ring"></div>
+                        <div class="pulse-ring-slow"></div>
+                    </div>
+                    <p class="scan-instructions">Aproxime o celular do chip NFC do seu copo para conectar!</p>
+                </div>
+
+                <div class="fallback-input">
+                    <p>Ou digite o código do copo para simular:</p>
+                    <div class="input-row">
+                        <input type="text" id="manual-cup-id" placeholder="Ex: copo_99" value="copo_99">
+                        <button id="manual-scan-btn">Conectar</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. TELA DE CADASTRO / ONBOARDING -->
+        <section id="screen-register" class="screen">
+            <div class="screen-header">
+                <h2>Cadastro Express</h2>
+                <p>Crie seu perfil em 10 segundos!</p>
+            </div>
+
+            <form id="register-form" class="glass-form">
+                <div class="form-group">
+                    <label>Como quer ser chamado(a)?</label>
+                    <input type="text" id="reg-name" placeholder="Seu nome ou apelido" required maxLength="15">
+                </div>
+
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label>Idade</label>
+                        <input type="number" id="reg-age" placeholder="Idade" min="18" max="99" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Onde você está agora?</label>
+                        <select id="reg-location">
+                            <option value="Pista">Pista de Dança</option>
+                            <option value="Bar">Bar Principal</option>
+                            <option value="VIP">Área VIP</option>
+                            <option value="Palco">Perto do Palco</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Qual sua vibe de hoje?</label>
+                    <select id="reg-vibe">
+                        <option value="Amigos" selected>💬 Fazer Amigos</option>
+                        <option value="Paquerar">🥂 Paquerar / Conectar</option>
+                        <option value="Dançar">💃 Dançar Muito</option>
+                        <option value="Resenhar">🍹 Só Beber e Resenhar</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Como você está vestido(a) hoje? (Crucial para te acharem!)</label>
+                    <input type="text" id="reg-clothes" placeholder="Ex: Jaqueta couro preta e boné azul" required maxLength="50">
+                </div>
+
+                <div class="form-group">
+                    <label>Seu Instagram (pós-evento)</label>
+                    <input type="text" id="reg-instagram" placeholder="Ex: @seuusername" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Sua Foto de Perfil</label>
+                    <div class="upload-avatar-container">
+                        <div class="file-upload-wrapper">
+                            <label for="reg-avatar-file" class="custom-file-upload">
+                                <span class="upload-icon">📷</span> Enviar Minha Foto
+                            </label>
+                            <input type="file" id="reg-avatar-file" accept="image/*">
+                        </div>
+                        <span class="upload-or">ou selecione uma foto padrão:</span>
+                        <div class="avatar-selector">
+                            <label class="avatar-opt">
+                                <input type="radio" name="reg-avatar" value="/static/images/carol.png" checked>
+                                <img src="/static/images/carol.png" class="avatar-img-preview" alt="Carol">
+                            </label>
+                            <label class="avatar-opt">
+                                <input type="radio" name="reg-avatar" value="/static/images/mateus.png">
+                                <img src="/static/images/mateus.png" class="avatar-img-preview" alt="Mateus">
+                            </label>
+                            <label class="avatar-opt">
+                                <input type="radio" name="reg-avatar" value="/static/images/juliana.png">
+                                <img src="/static/images/juliana.png" class="avatar-img-preview" alt="Juliana">
+                            </label>
+                            <label class="avatar-opt">
+                                <input type="radio" name="reg-avatar" value="/static/images/rodrigo.png">
+                                <img src="/static/images/rodrigo.png" class="avatar-img-preview" alt="Rodrigo">
+                            </label>
+                            <label class="avatar-opt">
+                                <input type="radio" name="reg-avatar" value="/static/images/kael.png">
+                                <img src="/static/images/kael.png" class="avatar-img-preview" alt="Kael">
+                            </label>
+                        </div>
+                    </div>
+                    <div id="user-avatar-crop-preview" class="hidden">
+                        <div class="preview-text-row">
+                            <span>Sua foto selecionada:</span>
+                            <button type="button" id="btn-remove-uploaded-img">Remover</button>
+                        </div>
+                        <div class="preview-crop-circle">
+                            <img id="img-crop-preview" src="" alt="Sua foto">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Entrar na Balada 🚀</button>
+            </form>
+        </section>
+
+        <!-- 3. TELA DE CONTATOS / PISTA DE BOLHAS (FEED PRINCIPAL) -->
+        <section id="screen-dashboard" class="screen">
+            <header class="dashboard-header glass">
+                <div class="logo-area">
+                    <span class="header-logo">🍸 Copo Social</span>
+                </div>
+                <div class="user-status-widget" id="header-user-status">
+                    <span class="user-name">Carregando...</span>
+                    <span class="user-loc-badge" id="current-location-badge">📍 Pista</span>
+                </div>
+            </header>
+
+            <!-- ROTEADOR DE VISUALIZAÇÃO INTERNO (BOLHAS VS GRADE) -->
+            <div class="view-toggle-bar">
+                <button id="btn-view-bubbles" class="active">🫧 Pista de Bolhas</button>
+                <button id="btn-view-grid">📱 Ver Grade</button>
+            </div>
+
+            <!-- CONTRAST CONTAINER PARA LOCALIZAÇÕES (Filtro Rápido) -->
+            <div class="location-filter-row">
+                <button class="loc-filter-btn active" data-loc="all">Todos</button>
+                <button class="loc-filter-btn" data-loc="Pista">🕺 Pista</button>
+                <button class="loc-filter-btn" data-loc="Bar">🍹 Bar</button>
+                <button class="loc-filter-btn" data-loc="VIP">👑 VIP</button>
+                <button class="loc-filter-btn" data-loc="Palco">🎧 Palco</button>
+            </div>
+
+            <!-- VIEW 1: ARENA DE BOLHAS FLUTUANTES -->
+            <div id="bubbles-arena-view" class="arena-container">
+                <div id="bubbles-canvas-container">
+                    <canvas id="bubbles-canvas"></canvas>
+                </div>
+                <div class="arena-tip">Toque em uma bolha para interagir!</div>
+            </div>
+
+            <!-- VIEW 2: GRADE DE USUÁRIOS ONLINE -->
+            <div id="grid-view" class="grid-container hidden">
+                <div class="users-grid" id="users-grid-container">
+                    <!-- Cards de usuários serão renderizados aqui -->
+                </div>
+            </div>
+
+            <!-- CARD EXPANDIDO / DETALHES DO PERFIL (MODAL) -->
+            <div id="profile-detail-modal" class="modal hidden">
+                <div class="modal-content glass">
+                    <button class="close-modal-btn">&times;</button>
+                    <div class="modal-profile-header">
+                        <div class="modal-avatar" id="modal-user-avatar">👾</div>
+                        <h2 id="modal-user-name">Rodrigo, 27</h2>
+                        <span class="user-loc-badge" id="modal-user-location">📍 Bar</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="detail-section">
+                            <h4>Como estou vestido(a) hoje:</h4>
+                            <p id="modal-user-clothes" class="clothes-box">Camiseta preta do Daft Punk e boné virado</p>
+                        </div>
+                        <div class="detail-section">
+                            <h4>Rede Social (Liberada após brinde):</h4>
+                            <p id="modal-user-instagram" class="instagram-blurred">🔒 @********</p>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="btn-send-cheers" class="btn-primary big-btn">🥂 Brindar!</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FOOTER MENU DA SPA -->
+            <nav class="nav-footer glass">
+                <button class="nav-btn active" data-tab="pista">
+                    <span class="nav-icon">🕺</span>
+                    <span>Pista</span>
+                </button>
+                <button class="nav-btn" data-tab="mural">
+                    <span class="nav-icon">📣</span>
+                    <span>Mural</span>
+                </button>
+                <button class="nav-btn" data-tab="matches">
+                    <span class="nav-icon">💬</span>
+                    <span>Brindes</span>
+                </button>
+                <button class="nav-btn" data-tab="avisos">
+                    <span class="nav-icon">📺</span>
+                    <span>Avisos</span>
+                </button>
+                <button class="nav-btn" data-tab="loc">
+                    <span class="nav-icon">📍</span>
+                    <span>Local</span>
+                </button>
+            </nav>
+        </section>
+
+        <!-- 3B. TELA DE MUDANÇA DE LOCALIZAÇÃO (SUBTELA DO MENU) -->
+        <section id="screen-change-location" class="screen">
+            <div class="screen-header">
+                <h2>Onde você está agora?</h2>
+                <p>Atualize para as pessoas te encontrarem na balada!</p>
+            </div>
+            
+            <div class="location-options">
+                <button class="loc-opt-btn" data-location="Pista">
+                    <span class="loc-icon">🕺</span>
+                    <span class="loc-name">Pista de Dança</span>
+                </button>
+                <button class="loc-opt-btn" data-location="Bar">
+                    <span class="loc-icon">🍹</span>
+                    <span class="loc-name">Bar Principal</span>
+                </button>
+                <button class="loc-opt-btn" data-location="VIP">
+                    <span class="loc-icon">👑</span>
+                    <span class="loc-name">Área VIP</span>
+                </button>
+                <button class="loc-opt-btn" data-location="Palco">
+                    <span class="loc-icon">🎧</span>
+                    <span class="loc-name">Perto do Palco</span>
+                </button>
+            </div>
+            
+            <div style="padding: 20px;">
+                <button id="btn-cancel-location" class="btn-secondary">Voltar</button>
+            </div>
+        </section>
+
+        <!-- 3C. TELA DE BRINDES & CHATS (SUBTELA DO MENU) -->
+        <section id="screen-matches-list" class="screen">
+            <div class="screen-header">
+                <h2>Seus Brindes 🥂</h2>
+                <p>Chame seus contatos no chat ou use seu cupom no bar!</p>
+            </div>
+
+            <div class="matches-container">
+                <div class="matches-list-section">
+                    <h3>Chats Ativos (Temporários)</h3>
+                    <div id="chats-list-container">
+                        <!-- Lista de chats -->
+                    </div>
+                </div>
+            </div>
+
+            <nav class="nav-footer glass">
+                <button class="nav-btn" data-tab="pista">
+                    <span class="nav-icon">🕺</span>
+                    <span>Pista</span>
+                </button>
+                <button class="nav-btn" data-tab="mural">
+                    <span class="nav-icon">📣</span>
+                    <span>Mural</span>
+                </button>
+                <button class="nav-btn active" data-tab="matches">
+                    <span class="nav-icon">💬</span>
+                    <span>Brindes</span>
+                </button>
+                <button class="nav-btn" data-tab="avisos">
+                    <span class="nav-icon">📺</span>
+                    <span>Avisos</span>
+                </button>
+                <button class="nav-btn" data-tab="loc">
+                    <span class="nav-icon">📍</span>
+                    <span>Local</span>
+                </button>
+            </nav>
+        </section>
+
+        <!-- 4. TELA DE CHAT PRIVADO TEMPORÁRIO -->
+        <section id="screen-chat" class="screen">
+            <header class="chat-header glass">
+                <button id="chat-back-btn" class="back-btn">&larr;</button>
+                <div class="chat-recipient-info">
+                    <span class="recipient-avatar" id="chat-user-avatar">👩‍🎤</span>
+                    <div>
+                        <h3 id="chat-user-name">Carol</h3>
+                        <span class="recipient-status" id="chat-user-loc">📍 VIP</span>
+                    </div>
+                </div>
+                <div class="chat-action-area">
+                    <button id="chat-show-voucher-btn" class="bar-voucher-badge">🍹 Cupom Bar</button>
+                </div>
+            </header>
+
+            <div class="chat-messages-container" id="chat-messages">
+                <!-- Mensagens do chat -->
+            </div>
+
+            <div class="chat-presets">
+                <button class="preset-btn">Tô na pista!</button>
+                <button class="preset-btn">Bora no bar?</button>
+                <button class="preset-btn">Onde você tá?</button>
+                <button class="preset-btn">Gostei da roupa!</button>
+            </div>
+
+            <div class="chat-input-bar">
+                <input type="text" id="chat-input-field" placeholder="Digite uma mensagem...">
+                <button id="chat-send-btn">Enviar</button>
+            </div>
+        </section>
+
+        <!-- 5. TELA DE TELÃO DA BALADA (PAINEL PÚBLICO) -->
+        <section id="screen-telao" class="screen-full">
+            <div class="telao-bg"></div>
+            <div class="telao-container">
+                <header class="telao-header">
+                    <div class="telao-logo">🍸 Copo Social</div>
+                    <div class="telao-stats">
+                        <div class="stat-box">
+                            <span class="stat-num" id="telao-stat-users">0</span>
+                            <span class="stat-lbl">Conectados</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-num neon-pink-text" id="telao-stat-matches">0</span>
+                            <span class="stat-lbl">Brindes Confirmados 🥂</span>
+                        </div>
+                    </div>
+                </header>
+
+                <div id="telao-announcement-banner" class="hidden" style="background: linear-gradient(90deg, #ff2a74, #05f9e2); border: 2px solid #fff; box-shadow: 0 0 25px rgba(255,255,255,0.6); padding: 14px; border-radius: 12px; margin-bottom: 20px; font-weight: 800; font-size: 18px; color: #000; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; animation: heartbeat 1.5s infinite alternate;">
+                    📢 AVISO DA PRODUÇÃO: <span id="telao-announcement-text" style="color: #000;"></span>
+                </div>
+
+                <div class="telao-grid">
+                    <div class="telao-left">
+                        <h3>Pista de Bolhas ao Vivo</h3>
+                        <div class="telao-bubble-arena" id="telao-canvas-container">
+                            <canvas id="telao-canvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="telao-right" style="display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <h3>Brindes Recentes 🥂</h3>
+                            <div class="telao-ticker" id="telao-ticker-container" style="max-height: 220px; overflow: hidden;">
+                                <!-- Tickers de brindes ao vivo -->
+                            </div>
+                        </div>
+                        <div>
+                            <h3>Galeria da Galera 📸</h3>
+                            <div id="telao-gallery-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;">
+                                <!-- 6 latest photos shown in big thumbnails -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="telao-footer">
+                    Aproxime o celular do seu copo e participe! coposocial.app
+                </footer>
+            </div>
+        </section>
+
+        <!-- 6. TELA DO BARMAN (VALIDADOR DE DESCONTOS) -->
+        <section id="screen-barman" class="screen">
+            <div class="screen-header">
+                <h2>📱 Validador do Barman</h2>
+                <p>Insira os dados do cupom ou confirme o brinde do casal.</p>
+            </div>
+
+            <div class="barman-panel glass">
+                <div class="form-group">
+                    <label>ID do Match (Código na Tela do Casal)</label>
+                    <input type="text" id="barman-match-code" placeholder="Ex: match_cup1_cup2">
+                </div>
+                <button id="btn-barman-validate" class="btn-primary">Verificar e Validar Drink</button>
+
+                <div id="barman-result" class="barman-result-box hidden">
+                    <h3 class="success-text">✅ VÁLIDO!</h3>
+                    <p><strong>Casal:</strong> <span id="barman-names">Pedro & Carol</span></p>
+                    <p class="voucher-highlight">🍹 Liberar: 02 Drinks pelo preço de 01!</p>
+                    <button id="btn-barman-confirm-redeemed" class="btn-primary success-btn">Confirmar Entrega</button>
+                </div>
+            </div>
+
+            <div style="padding: 20px;">
+                <button onclick="changeScreen('screen-scan')" class="btn-secondary">Sair do Modo Barman</button>
+            </div>
+        </section>
+
+        <!-- 7. TELA DE EVENTO ENCERRADO (BLOQUEIO PÓS-EVENTO) -->
+        <section id="screen-event-ended" class="screen">
+            <div class="ended-container">
+                <div class="ended-header">
+                    <span class="ended-icon">🌅</span>
+                    <h1 class="neon-text-pink">O Evento Acabou!</h1>
+                    <p>A rede social está offline até a próxima festa.</p>
+                </div>
+
+                <div class="ended-stats-summary glass">
+                    <h3>Resumo da sua Noite 🥂</h3>
+                    <p>Você brindou e conectou-se com novas pessoas.</p>
+                </div>
+
+                <div class="ended-matches-section">
+                    <h3>Seus contatos salvos (Instagram):</h3>
+                    <p class="ended-help-text">Adicione-os no Instagram para manter o contato!</p>
+                    <div class="instagram-list" id="ended-instagram-list">
+                        <!-- Apenas matches e seus instagrams -->
+                    </div>
+                </div>
+
+                <p class="ended-footer-message">Os chats e fotos de perfil foram apagados para garantir a privacidade. Nos vemos na próxima balada! 🍸</p>
+            </div>
+        </section>
+
+        <!-- 3D. TELA DO MURAL DA BALADA (SUBTELA DO MENU) -->
+        <section id="screen-mural" class="screen">
+            <div class="screen-header">
+                <h2>📣 Mural & Galeria</h2>
+                <p>Compartilhe recados e fotos ao vivo com a festa!</p>
+            </div>
+
+            <!-- TABS INTERNAS -->
+            <div class="view-toggle-bar" style="margin: 0 15px 12px 15px; display: flex; gap: 8px;">
+                <button id="btn-mural-tab-recados" class="active" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 700; border-radius: 8px;">💬 Recados</button>
+                <button id="btn-mural-tab-galeria" style="flex: 1; padding: 10px; font-size: 13px; font-weight: 700; border-radius: 8px;">📸 Galeria</button>
+            </div>
+
+            <!-- VIEW 1: RECADOS ANÔNIMOS -->
+            <div id="mural-view-recados" class="mural-container glass" style="margin: 0 15px 15px 15px; padding: 15px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="form-group">
+                    <label style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; display: block;">Escreva seu recado (máx. 60 caracteres):</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="mural-input" placeholder="Ex: Quem era de vestido preto perto do palco?" maxlength="60" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 10px; font-family: var(--font-body); font-size: 14px;">
+                        <button id="btn-send-mural" class="btn-primary" style="padding: 0 20px; border-radius: 10px; font-weight: bold;">Enviar</button>
+                    </div>
+                </div>
+
+                <div class="mural-messages-list" style="margin-top: 25px;">
+                    <h3 style="font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; color: var(--neon-cyan);">Recados da Pista 💬</h3>
+                    <div id="mural-messages-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; margin-top: 12px; padding-right: 4px;">
+                        <!-- Recados aprovados ao vivo -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: GALERIA DE FOTOS -->
+            <div id="mural-view-galeria" class="mural-container glass hidden" style="margin: 0 15px 15px 15px; padding: 15px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08);">
+                <div class="form-group" style="text-align: center;">
+                    <label for="gallery-photo-file" class="custom-file-upload" style="display: inline-flex; width: 100%; box-sizing: border-box; justify-content: center; align-items: center; cursor: pointer;">
+                        <span class="upload-icon">📸</span> Tirar/Enviar Foto da Balada
+                    </label>
+                    <input type="file" id="gallery-photo-file" accept="image/*" style="display: none;">
+                </div>
+
+                <div class="gallery-photo-list" style="margin-top: 25px;">
+                    <h3 style="font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; color: var(--neon-pink);">Feed da Festa 📸</h3>
+                    <div id="gallery-photos-container" style="display: flex; flex-direction: column; gap: 15px; max-height: 280px; overflow-y: auto; margin-top: 12px; padding-right: 4px;">
+                        <!-- Fotos no estilo feed de cards -->
+                    </div>
+                </div>
+            </div>
+
+            <nav class="nav-footer glass">
+                <button class="nav-btn" data-tab="pista">
+                    <span class="nav-icon">🕺</span>
+                    <span>Pista</span>
+                </button>
+                <button class="nav-btn active" data-tab="mural">
+                    <span class="nav-icon">📣</span>
+                    <span>Mural</span>
+                </button>
+                <button class="nav-btn" data-tab="matches">
+                    <span class="nav-icon">💬</span>
+                    <span>Brindes</span>
+                </button>
+                <button class="nav-btn" data-tab="avisos">
+                    <span class="nav-icon">📺</span>
+                    <span>Avisos</span>
+                </button>
+                <button class="nav-btn" data-tab="loc">
+                    <span class="nav-icon">📍</span>
+                    <span>Local</span>
+                </button>
+            </nav>
+        </section>
+
+        <!-- TELA DE AVISOS DA PRODUÇÃO (nova aba) -->
+        <section id="screen-avisos" class="screen">
+            <div class="screen-header">
+                <h2>📺 Avisos da Produção</h2>
+                <p>Comunicados enviados pela organização do evento.</p>
+            </div>
+
+            <!-- Aviso ativo no momento -->
+            <div id="avisos-active-box" class="hidden" style="margin: 0 15px 15px 15px; padding: 18px; border-radius: 16px; background: linear-gradient(135deg, rgba(255,42,116,0.15), rgba(5,249,226,0.1)); border: 2px solid var(--neon-pink); box-shadow: var(--glow-pink);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <span style="font-size: 28px; animation: heartbeat 1.5s infinite alternate;">📢</span>
+                    <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--neon-pink); font-weight: 700;">Aviso Atual da Produção</span>
+                </div>
+                <p id="avisos-active-text" style="font-size: 16px; font-weight: 700; color: #fff; line-height: 1.5; margin: 0;"></p>
+            </div>
+
+            <div id="avisos-empty-state" style="margin: 20px 15px; padding: 30px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.06); text-align: center;">
+                <span style="font-size: 40px; display: block; margin-bottom: 12px; opacity: 0.5;">📡</span>
+                <p style="color: var(--text-muted); font-size: 14px;">Nenhum aviso no momento. Fique de olho aqui!</p>
+            </div>
+
+            <!-- Histórico de comunicados -->
+            <div style="margin: 0 15px 15px 15px; padding: 15px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.06);">
+                <h3 style="font-size: 14px; color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06);">Histórico de Avisos</h3>
+                <div id="avisos-history-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto;">
+                    <p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Nenhum aviso anterior.</p>
+                </div>
+            </div>
+
+            <nav class="nav-footer glass">
+                <button class="nav-btn" data-tab="pista">
+                    <span class="nav-icon">🕺</span>
+                    <span>Pista</span>
+                </button>
+                <button class="nav-btn" data-tab="mural">
+                    <span class="nav-icon">📣</span>
+                    <span>Mural</span>
+                </button>
+                <button class="nav-btn" data-tab="matches">
+                    <span class="nav-icon">💬</span>
+                    <span>Brindes</span>
+                </button>
+                <button class="nav-btn active" data-tab="avisos">
+                    <span class="nav-icon">📺</span>
+                    <span>Avisos</span>
+                </button>
+                <button class="nav-btn" data-tab="loc">
+                    <span class="nav-icon">📍</span>
+                    <span>Local</span>
+                </button>
+            </nav>
+        </section>
+
+        <!-- TELA DE MODERAÇÃO SIMPLIFICADA -->
+        <section id="screen-moderacao" class="screen">
+            <div class="screen-header">
+                <h2>🛡️ Painel do Moderador</h2>
+                <p>Controle geral do evento em tempo real.</p>
+            </div>
+
+            <!-- STATS AO VIVO -->
+            <div class="moderacao-container glass" style="margin: 0 15px 15px 15px; padding: 15px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08);">
+                <h3 style="font-size: 14px; color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08);">📊 Estatísticas ao Vivo</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;" id="mod-stats-grid">
+                    <div style="background: rgba(5,249,226,0.07); border: 1px solid rgba(5,249,226,0.2); border-radius: 10px; padding: 12px; text-align: center;">
+                        <span style="font-size: 24px; font-weight: 800; color: var(--neon-cyan); display: block;" id="mod-stat-users">0</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Pessoas Online</span>
+                    </div>
+                    <div style="background: rgba(255,42,116,0.07); border: 1px solid rgba(255,42,116,0.2); border-radius: 10px; padding: 12px; text-align: center;">
+                        <span style="font-size: 24px; font-weight: 800; color: var(--neon-pink); display: block;" id="mod-stat-matches">0</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Brindes Confirmados</span>
+                    </div>
+                    <div style="background: rgba(255,180,0,0.07); border: 1px solid rgba(255,180,0,0.2); border-radius: 10px; padding: 12px; text-align: center;">
+                        <span style="font-size: 24px; font-weight: 800; color: #FFB400; display: block;" id="mod-stat-photos">0</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Fotos Enviadas</span>
+                    </div>
+                    <div style="background: rgba(150,100,255,0.07); border: 1px solid rgba(150,100,255,0.2); border-radius: 10px; padding: 12px; text-align: center;">
+                        <span style="font-size: 24px; font-weight: 800; color: #9664FF; display: block;" id="mod-stat-messages">0</span>
+                        <span style="font-size: 11px; color: var(--text-muted);">Recados no Mural</span>
+                    </div>
+                </div>
+                <button id="btn-mod-refresh-stats" class="btn-secondary" style="width: 100%; margin-top: 12px; padding: 8px; font-size: 12px; border-radius: 8px;">🔄 Atualizar Stats</button>
+            </div>
+
+            <!-- COMUNICADO GERAL -->
+            <div class="moderacao-container glass" style="margin: 0 15px 15px 15px; padding: 15px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08);">
+                <h3 style="font-size: 14px; color: var(--neon-pink); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08);">📢 Comunicado Geral</h3>
+                <div class="form-group">
+                    <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px;">Aviso instantâneo para TODOS os usuários + Aba Avisos:</label>
+                    <textarea id="mod-announcement-text" placeholder="Ex: DJ Kael entra em 5 minutos! 🎧" style="width: 100%; height: 70px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px; border-radius: 8px; font-family: var(--font-body); font-size: 13px; box-sizing: border-box; resize: none;"></textarea>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button id="btn-mod-send-announcement" class="btn-primary" style="flex: 1; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: bold; background: var(--neon-cyan); border-color: var(--neon-cyan); color: black;">Enviar para Todos 📢</button>
+                    <button id="btn-mod-clear-announcement" class="btn-secondary" style="padding: 12px; border-radius: 8px; font-size: 12px; font-weight: bold;">🗑️</button>
+                </div>
+            </div>
+
+            <!-- PROMOÇÃO RELÂMPAGO -->
+            <div class="moderacao-container glass" style="margin: 0 15px 15px 15px; padding: 15px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08);">
+                <h3 style="font-size: 14px; color: #FFB400; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08);">🔥 Promoção Relâmpago</h3>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="sim-promo-text" placeholder="Ex: Double Beer por 10min!" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px; border-radius: 8px; font-size: 13px;">
+                    <button id="sim-trigger-promo-btn" class="btn-primary" style="padding: 10px 14px; border-radius: 8px; font-size: 13px; background: #FFB400; border-color: #FFB400; color: black; font-weight: bold;">🔥</button>
+                </div>
+            </div>
+
+            <!-- SORTEIO E CONTROLE -->
+            <div class="moderacao-container glass" style="margin: 0 15px 15px 15px; padding: 15px; border-radius: 16px; background: var(--card-bg); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 10px;">
+                <h3 style="font-size: 14px; color: var(--neon-pink); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08);">🎁 Sorteio & Controle</h3>
+                <button id="sim-draw-prize-btn" class="btn-primary" style="padding: 12px; border-radius: 8px; font-size: 13px; font-weight: bold; background: #2a9d8f; border-color: #2a9d8f;">🏆 Sortear Casal Premiado</button>
+                <button id="sim-toggle-event-btn" class="btn-secondary" style="padding: 12px; border-radius: 8px; font-size: 13px; font-weight: bold; color: var(--neon-pink); border-color: var(--neon-pink);">⏸️ Alternar Evento (Liga/Desliga)</button>
+                <button id="sim-reset-btn" class="btn-secondary" style="padding: 10px; border-radius: 8px; font-size: 12px; color: var(--text-muted);">🗑️ Limpar Todos os Dados</button>
+            </div>
+
+            <div style="padding: 16px 20px; text-align: center;">
+                <button onclick="changeScreen('screen-scan')" class="btn-secondary" style="width: 100%; max-width: 200px; padding: 12px; border-radius: 10px;">Sair do Painel</button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- MODAL DE PROMOÇÃO RELÂMPAGO (GERAL) -->
+    <div id="promo-modal" class="modal hidden" style="z-index: 10000;">
+        <div class="modal-content glass" style="border: 2px solid var(--neon-cyan); box-shadow: var(--glow-cyan); text-align: center; padding: 25px; border-radius: 20px; max-width: 90%; width: 340px;">
+            <span style="font-size: 48px; display: block; margin-bottom: 10px; animation: heartbeat 1s infinite alternate;">🔥</span>
+            <h2 class="neon-text-cyan" style="font-size: 24px; text-transform: uppercase; font-family: var(--font-heading);">PROMOÇÃO RELÂMPAGO!</h2>
+            <p id="promo-modal-text" style="font-size: 16px; margin: 15px 0; font-weight: 700; color: #fff;"></p>
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">
+                Tempo restante: <span id="promo-modal-timer" style="color: var(--neon-pink); font-weight: bold; font-size: 14px;">00:00</span>
+            </div>
+            <button id="btn-close-promo" class="btn-primary" style="width: 100%; padding: 12px; border-radius: 10px; font-weight: bold;">APROVEITAR!</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE CASAL PREMIADO (EXCLUSIVO DO CASAL SORTEADO) -->
+    <div id="prize-modal" class="modal hidden" style="z-index: 10001;">
+        <div class="modal-content glass" style="border: 2px solid var(--neon-pink); box-shadow: var(--glow-pink); text-align: center; padding: 25px; border-radius: 20px; max-width: 90%; width: 340px;">
+            <span style="font-size: 48px; display: block; margin-bottom: 10px; animation: bounce 1s infinite alternate;">🎁</span>
+            <h2 class="neon-text-pink" style="font-size: 22px; text-transform: uppercase; font-family: var(--font-heading);">Você Ganhou um Brinde!</h2>
+            <p style="font-size: 14px; margin: 10px 0; color: var(--text-muted);">Seu brinde (match) com <strong id="prize-partner-name" style="color: var(--neon-cyan);">Carol</strong> foi sorteado!</p>
+            <p style="font-size: 15px; margin: 15px 0; color: #fff; font-weight: 600;">Vocês ganharam um drink especial por conta da casa no bar.</p>
+            
+            <div class="voucher-box" style="background: rgba(255, 42, 116, 0.1); border: 1px dashed var(--neon-pink); padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+                <span style="font-size: 10px; color: var(--text-muted); display: block; text-transform: uppercase; margin-bottom: 4px;">Código do Voucher</span>
+                <strong id="prize-voucher-code" style="font-size: 22px; color: var(--neon-pink); letter-spacing: 1.5px; font-family: var(--font-heading);">PREMIO-9999</strong>
+            </div>
+
+            <button id="btn-close-prize" class="btn-primary" style="width: 100%; padding: 12px; border-radius: 10px; font-weight: bold;">FECHAR E RESGATAR!</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE ANÚNCIO GERAL DA ORGANIZAÇÃO -->
+    <div id="announcement-modal" class="modal hidden" style="z-index: 10002;">
+        <div class="modal-content glass" style="border: 2px solid var(--neon-pink); box-shadow: var(--glow-pink); text-align: center; padding: 25px; border-radius: 20px; max-width: 90%; width: 340px;">
+            <span style="font-size: 40px; display: block; margin-bottom: 10px;">📢</span>
+            <h2 class="neon-text-pink" style="font-size: 20px; text-transform: uppercase; font-family: var(--font-heading);">Comunicado Geral</h2>
+            <p id="announcement-modal-text" style="font-size: 15px; margin: 15px 0; font-weight: 500; color: #fff; line-height: 1.5;"></p>
+            <button id="btn-close-announcement" class="btn-primary" style="width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; background: var(--neon-pink); border-color: var(--neon-pink); box-shadow: var(--glow-pink);">Entendido! 👍</button>
+        </div>
+    </div>
+
+    <!-- SCRIPT DA APLICATIVO -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
