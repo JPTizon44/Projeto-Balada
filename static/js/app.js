@@ -198,6 +198,9 @@ function setupEventHandlers() {
             } else if (tab === "matches") {
                 changeScreen("screen-matches-list");
                 loadMatchesList();
+            } else if (tab === "avisos") {
+                changeScreen("screen-avisos");
+                loadAvisosScreen();
             } else if (tab === "loc") {
                 changeScreen("screen-change-location");
                 setupLocationChangeScreen();
@@ -775,6 +778,7 @@ async function pingServer() {
         // 6. Checar comunicado geral
         if (data.announcement) {
             currentAnnouncementTime = data.announcement.timestamp;
+            addAnnouncementToLocalHistory(data.announcement);
             if (data.announcement.timestamp > lastSeenAnnouncementTime) {
                 document.getElementById("announcement-modal-text").innerText = data.announcement.text;
                 document.getElementById("announcement-modal").classList.remove("hidden");
@@ -783,6 +787,11 @@ async function pingServer() {
             }
         } else {
             document.getElementById("announcement-modal").classList.add("hidden");
+        }
+
+        // Se o usuário estiver na tela de avisos, atualiza os dados em tempo real
+        if (activeScreen === "screen-avisos") {
+            updateAvisosDomOnly(data.announcement);
         }
 
         // 7. Atualizar feed ao vivo na Pista
@@ -1482,6 +1491,80 @@ function loadEndedScreenMatches() {
         `;
         list.appendChild(item);
     });
+}
+
+// ==========================================
+// 7B. TELA DE AVISOS E HISTÓRICO DE ANÚNCIOS
+// ==========================================
+
+async function loadAvisosScreen() {
+    if (!currentCupId) return;
+    try {
+        const res = await fetch(`${API_BASE}/api/ping?cup_id=${currentCupId}`);
+        const data = await res.json();
+        
+        updateAvisosDomOnly(data.announcement);
+    } catch (e) {
+        console.error("Erro ao buscar avisos no servidor:", e);
+    }
+}
+
+function updateAvisosDomOnly(announcement) {
+    const activeBox = document.getElementById("avisos-active-box");
+    const activeText = document.getElementById("avisos-active-text");
+    const emptyState = document.getElementById("avisos-empty-state");
+
+    if (announcement) {
+        if (activeText) activeText.innerText = announcement.text;
+        if (activeBox) activeBox.classList.remove("hidden");
+        if (emptyState) emptyState.classList.add("hidden");
+        addAnnouncementToLocalHistory(announcement);
+    } else {
+        if (activeBox) activeBox.classList.add("hidden");
+        if (emptyState) emptyState.classList.remove("hidden");
+    }
+
+    renderAvisosHistory();
+}
+
+function addAnnouncementToLocalHistory(ann) {
+    if (!ann || !ann.text) return;
+    let saved = localStorage.getItem("copo_social_announcements_history");
+    let history = saved ? JSON.parse(saved) : [];
+    
+    // Evita duplicados
+    if (!history.some(h => h.timestamp === ann.timestamp)) {
+        history.push(ann);
+        history.sort((a, b) => b.timestamp - a.timestamp);
+        localStorage.setItem("copo_social_announcements_history", JSON.stringify(history));
+    }
+}
+
+function renderAvisosHistory() {
+    const list = document.getElementById("avisos-history-list");
+    if (!list) return;
+
+    let saved = localStorage.getItem("copo_social_announcements_history");
+    let history = saved ? JSON.parse(saved) : [];
+
+    if (history.length === 0) {
+        list.innerHTML = `<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Nenhum aviso anterior.</p>`;
+        return;
+    }
+
+    list.innerHTML = history.map(h => {
+        const date = new Date(h.timestamp * 1000);
+        const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+        return `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; color: var(--neon-cyan); font-weight: 700;">📺 ENVIADO</span>
+                    <span style="font-size: 10px; color: var(--text-muted);">${timeStr}</span>
+                </div>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.85); margin: 0; line-height: 1.4;">${h.text}</p>
+            </div>
+        `;
+    }).join("");
 }
 
 
