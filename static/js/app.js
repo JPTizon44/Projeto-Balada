@@ -782,7 +782,6 @@ async function pingServer() {
         // 6. Checar comunicado geral
         if (data.announcement) {
             currentAnnouncementTime = data.announcement.timestamp;
-            addAnnouncementToLocalHistory(data.announcement);
             if (data.announcement.timestamp > lastSeenAnnouncementTime) {
                 document.getElementById("announcement-modal-text").innerText = data.announcement.text;
                 document.getElementById("announcement-modal").classList.remove("hidden");
@@ -1498,7 +1497,7 @@ function loadEndedScreenMatches() {
 }
 
 // ==========================================
-// 7B. TELA DE AVISOS E HISTÓRICO DE ANÚNCIOS
+// 7B. TELA DE AVISOS (COMUNICADO & PROMOÇÃO)
 // ==========================================
 
 async function loadAvisosScreen() {
@@ -1522,7 +1521,6 @@ function updateAvisosDomOnly(announcement, activePromo) {
         if (activeText) activeText.innerText = announcement.text;
         if (activeBox) activeBox.classList.remove("hidden");
         if (emptyState) emptyState.classList.add("hidden");
-        addAnnouncementToLocalHistory(announcement);
     } else {
         if (activeBox) activeBox.classList.add("hidden");
         if (!activePromo && emptyState) emptyState.classList.remove("hidden");
@@ -1545,8 +1543,6 @@ function updateAvisosDomOnly(announcement, activePromo) {
     } else {
         if (promoBox) promoBox.classList.add("hidden");
     }
-
-    renderAvisosHistory();
 }
 
 function startPromoCountdown(endTime) {
@@ -1591,46 +1587,6 @@ function stopPromoCountdown() {
     }
     const promoBox = document.getElementById("avisos-promo-box");
     if (promoBox) promoBox.classList.add("hidden");
-}
-
-function addAnnouncementToLocalHistory(ann) {
-    if (!ann || !ann.text) return;
-    let saved = localStorage.getItem("copo_social_announcements_history");
-    let history = saved ? JSON.parse(saved) : [];
-    
-    // Evita duplicados
-    if (!history.some(h => h.timestamp === ann.timestamp)) {
-        history.push(ann);
-        history.sort((a, b) => b.timestamp - a.timestamp);
-        localStorage.setItem("copo_social_announcements_history", JSON.stringify(history));
-    }
-}
-
-function renderAvisosHistory() {
-    const list = document.getElementById("avisos-history-list");
-    if (!list) return;
-
-    let saved = localStorage.getItem("copo_social_announcements_history");
-    let history = saved ? JSON.parse(saved) : [];
-
-    if (history.length === 0) {
-        list.innerHTML = `<p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Nenhum aviso anterior.</p>`;
-        return;
-    }
-
-    list.innerHTML = history.map(h => {
-        const date = new Date(h.timestamp * 1000);
-        const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-        return `
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 11px; color: var(--neon-cyan); font-weight: 700;">📺 ENVIADO</span>
-                    <span style="font-size: 10px; color: var(--text-muted);">${timeStr}</span>
-                </div>
-                <p style="font-size: 13px; color: rgba(255,255,255,0.85); margin: 0; line-height: 1.4;">${h.text}</p>
-            </div>
-        `;
-    }).join("");
 }
 
 
