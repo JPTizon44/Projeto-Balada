@@ -119,7 +119,10 @@ function handleUrlRouting() {
 
 // Mudar de tela na SPA
 function changeScreen(screenId) {
-    if (screenId !== "screen-dashboard" && screenId !== "screen-matches-list" && screenId !== "screen-mural") {
+    const activeTabs = ["screen-dashboard", "screen-matches-list", "screen-mural", "screen-avisos"];
+    if (activeTabs.includes(screenId)) {
+        startPingLoop();
+    } else {
         stopPingLoop();
     }
     if (screenId !== "screen-chat") {
