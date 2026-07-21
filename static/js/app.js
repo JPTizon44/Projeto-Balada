@@ -1016,16 +1016,13 @@ async function setupDashboardBubblesCanvas() {
     try {
         const res = await fetch(`${API_BASE}/api/users`);
         const allUsers = await res.json();
-        
-        // Filtra para remover a si mesmo da pista de bolhas
-        const otherUsers = allUsers.filter(u => u.id !== currentCupId);
 
-        // Iniciar motor de física
+        // Iniciar motor de física (incluindo a si mesmo para ver a própria bolha)
         if (dashboardPhysics) {
             dashboardPhysics.stop();
         }
         
-        dashboardPhysics = new BubblePhysicsEngine(dashboardCanvas, container, otherUsers, onBubbleClicked);
+        dashboardPhysics = new BubblePhysicsEngine(dashboardCanvas, container, allUsers, onBubbleClicked);
         dashboardPhysics.start();
         dashboardPhysics.applyFilter(activeLocationFilter);
         
@@ -1040,11 +1037,8 @@ async function syncDashboardBubbles() {
         const res = await fetch(`${API_BASE}/api/users`);
         const allUsers = await res.json();
         
-        // Remove a si mesmo das bolhas
-        const otherUsers = allUsers.filter(u => u.id !== currentCupId);
-        
-        // Atualiza a física com os usuários atuais
-        dashboardPhysics.syncUsers(otherUsers);
+        // Atualiza a física com todos os usuários atuais
+        dashboardPhysics.syncUsers(allUsers);
     } catch (e) {
         console.error("Erro ao sincronizar bolhas:", e);
     }
@@ -1062,26 +1056,38 @@ function onBubbleClicked(user) {
     const instEl = document.getElementById("modal-user-instagram");
     const brindeBtn = document.getElementById("btn-send-cheers");
 
-    // Verificar se já temos match com essa pessoa para mostrar o instagram de graça
-    checkIfHasMatch(user.id).then(hasMatch => {
-        if (hasMatch) {
-            instEl.innerText = `📱 Instagram: ${user.instagram}`;
-            instEl.classList.remove("instagram-blurred");
-            brindeBtn.innerText = "🥂 Conversar no Chat";
-            brindeBtn.onclick = () => {
-                modal.classList.remove("active");
-                openChatWithUser(user.id);
-            };
-        } else {
-            instEl.innerText = "🔒 Instagram liberado após Brinde!";
-            instEl.classList.add("instagram-blurred");
-            brindeBtn.innerText = "🥂 Brindar!";
-            brindeBtn.setAttribute("data-target-id", user.id);
-            brindeBtn.onclick = () => {
-                sendCheers(user.id);
-            };
-        }
-    });
+    if (user.id === currentCupId) {
+        // É o próprio usuário!
+        instEl.innerText = `📱 Seu Instagram: ${user.instagram}`;
+        instEl.classList.remove("instagram-blurred");
+        brindeBtn.innerText = "📍 Alterar Minha Localização";
+        brindeBtn.onclick = () => {
+            modal.classList.remove("active");
+            changeScreen("screen-change-location");
+            setupLocationChangeScreen();
+        };
+    } else {
+        // Verificar se já temos match com essa pessoa para mostrar o instagram de graça
+        checkIfHasMatch(user.id).then(hasMatch => {
+            if (hasMatch) {
+                instEl.innerText = `📱 Instagram: ${user.instagram}`;
+                instEl.classList.remove("instagram-blurred");
+                brindeBtn.innerText = "🥂 Conversar no Chat";
+                brindeBtn.onclick = () => {
+                    modal.classList.remove("active");
+                    openChatWithUser(user.id);
+                };
+            } else {
+                instEl.innerText = "🔒 Instagram liberado após Brinde!";
+                instEl.classList.add("instagram-blurred");
+                brindeBtn.innerText = "🥂 Brindar!";
+                brindeBtn.setAttribute("data-target-id", user.id);
+                brindeBtn.onclick = () => {
+                    sendCheers(user.id);
+                };
+            }
+        });
+    }
 
     modal.classList.add("active");
 }
@@ -1650,8 +1656,8 @@ class BubblePhysicsEngine {
     resize() {
         // Redimensiona o canvas para preencher o container físico
         const rect = this.container.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
+        this.canvas.width = rect.width || 320;
+        this.canvas.height = rect.height > 100 ? rect.height : 350;
         
         // Reposicionar bolhas fora da tela para dentro
         this.allBubbles.forEach(b => {
@@ -1687,7 +1693,7 @@ class BubblePhysicsEngine {
     }
 
     syncUsers(newUsersList) {
-        const otherUsers = newUsersList.filter(u => u.id !== currentCupId);
+        const otherUsers = newUsersList;
         
         const currentIds = this.allBubbles.map(b => b.id);
         const newIds = otherUsers.map(u => u.id);
@@ -1899,9 +1905,11 @@ class BubblePhysicsEngine {
         this.filteredBubbles.forEach(b => {
             this.ctx.save();
 
+            const isMe = b.id === currentCupId;
+
             // 1. Sombras e brilhos neon
-            this.ctx.shadowBlur = this.isLargeTelao ? 25 : 12;
-            this.ctx.shadowColor = b.color;
+            this.ctx.shadowBlur = this.isLargeTelao ? 25 : (isMe ? 18 : 12);
+            this.ctx.shadowColor = isMe ? "#05f9e2" : b.color;
 
             // 2. Fundo da bolha (translúcido estilo vidro)
             this.ctx.fillStyle = "rgba(18, 19, 26, 0.75)";
@@ -1910,8 +1918,8 @@ class BubblePhysicsEngine {
             this.ctx.fill();
 
             // 3. Borda Neon Brilhante
-            this.ctx.strokeStyle = b.color;
-            this.ctx.lineWidth = this.isLargeTelao ? 3 : 2;
+            this.ctx.strokeStyle = isMe ? "#05f9e2" : b.color;
+            this.ctx.lineWidth = isMe ? 3 : (this.isLargeTelao ? 3 : 2);
             this.ctx.stroke();
 
             // Desativar sombra
@@ -1943,14 +1951,15 @@ class BubblePhysicsEngine {
             this.ctx.fillStyle = "#ffffff";
             
             // Fundo escuro pequeno atrás do nome para legibilidade
-            const textWidth = this.ctx.measureText(b.user.name).width;
+            const displayName = isMe ? `${b.user.name} (Você)` : b.user.name;
+            const textWidth = this.ctx.measureText(displayName).width;
             this.ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
             this.ctx.fillRect(b.x - textWidth/2 - 4, b.y + (this.isLargeTelao ? 20 : 13), textWidth + 8, this.isLargeTelao ? 18 : 12);
 
-            this.ctx.fillStyle = "#ffffff";
+            this.ctx.fillStyle = isMe ? "#05f9e2" : "#ffffff";
             this.ctx.textAlign = "center";
             this.ctx.textBaseline = "middle";
-            this.ctx.fillText(b.user.name, b.x, b.y + (this.isLargeTelao ? 28 : 18));
+            this.ctx.fillText(displayName, b.x, b.y + (this.isLargeTelao ? 28 : 18));
 
             this.ctx.restore();
         });
