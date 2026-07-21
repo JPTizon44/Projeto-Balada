@@ -6,6 +6,7 @@ let activeScreen = "screen-scan";
 let activeLocationFilter = "all";
 let pingInterval = null;
 let uploadedAvatarDataUrl = null;
+let promoCountdownInterval = null;
 
 // CHAT ATIVO
 let activeChatMatchId = null;
@@ -758,15 +759,15 @@ async function pingServer() {
             const remaining = data.active_promo.end_time - now;
             if (remaining > 0) {
                 document.getElementById("promo-modal-text").innerText = data.active_promo.text;
-                const minutes = Math.floor(remaining / 60).toString().padStart(2, '0');
-                const seconds = (remaining % 60).toString().padStart(2, '0');
-                document.getElementById("promo-modal-timer").innerText = `${minutes}:${seconds}`;
                 document.getElementById("promo-modal").classList.remove("hidden");
+                startPromoCountdown(data.active_promo.end_time);
             } else {
                 document.getElementById("promo-modal").classList.add("hidden");
+                stopPromoCountdown();
             }
         } else {
             document.getElementById("promo-modal").classList.add("hidden");
+            stopPromoCountdown();
         }
 
         // 5. Checar sorteio premiado ganho
@@ -794,7 +795,7 @@ async function pingServer() {
 
         // Se o usuário estiver na tela de avisos, atualiza os dados em tempo real
         if (activeScreen === "screen-avisos") {
-            updateAvisosDomOnly(data.announcement);
+            updateAvisosDomOnly(data.announcement, data.active_promo);
         }
 
         // 7. Atualizar feed ao vivo na Pista
@@ -1506,13 +1507,13 @@ async function loadAvisosScreen() {
         const res = await fetch(`${API_BASE}/api/ping?cup_id=${currentCupId}`);
         const data = await res.json();
         
-        updateAvisosDomOnly(data.announcement);
+        updateAvisosDomOnly(data.announcement, data.active_promo);
     } catch (e) {
         console.error("Erro ao buscar avisos no servidor:", e);
     }
 }
 
-function updateAvisosDomOnly(announcement) {
+function updateAvisosDomOnly(announcement, activePromo) {
     const activeBox = document.getElementById("avisos-active-box");
     const activeText = document.getElementById("avisos-active-text");
     const emptyState = document.getElementById("avisos-empty-state");
@@ -1524,10 +1525,72 @@ function updateAvisosDomOnly(announcement) {
         addAnnouncementToLocalHistory(announcement);
     } else {
         if (activeBox) activeBox.classList.add("hidden");
-        if (emptyState) emptyState.classList.remove("hidden");
+        if (!activePromo && emptyState) emptyState.classList.remove("hidden");
+    }
+
+    const promoBox = document.getElementById("avisos-promo-box");
+    const promoText = document.getElementById("avisos-promo-text");
+
+    if (activePromo) {
+        const now = Math.floor(Date.now() / 1000);
+        const remaining = activePromo.end_time - now;
+        if (remaining > 0) {
+            if (promoText) promoText.innerText = activePromo.text;
+            if (promoBox) promoBox.classList.remove("hidden");
+            if (emptyState) emptyState.classList.add("hidden");
+            startPromoCountdown(activePromo.end_time);
+        } else {
+            if (promoBox) promoBox.classList.add("hidden");
+        }
+    } else {
+        if (promoBox) promoBox.classList.add("hidden");
     }
 
     renderAvisosHistory();
+}
+
+function startPromoCountdown(endTime) {
+    if (promoCountdownInterval) clearInterval(promoCountdownInterval);
+
+    function update() {
+        const now = Math.floor(Date.now() / 1000);
+        const remaining = endTime - now;
+        if (remaining <= 0) {
+            clearInterval(promoCountdownInterval);
+            promoCountdownInterval = null;
+            document.getElementById("promo-modal").classList.add("hidden");
+            const promoBox = document.getElementById("avisos-promo-box");
+            if (promoBox) promoBox.classList.add("hidden");
+            
+            // Re-checar avisos se estiver ativo para mostrar empty state
+            if (activeScreen === "screen-avisos") {
+                loadAvisosScreen();
+            }
+            return;
+        }
+
+        const minutes = Math.floor(remaining / 60).toString().padStart(2, '0');
+        const seconds = (remaining % 60).toString().padStart(2, '0');
+        const timeStr = `${minutes}:${seconds}`;
+
+        const modalTimer = document.getElementById("promo-modal-timer");
+        if (modalTimer) modalTimer.innerText = timeStr;
+
+        const avisosTimer = document.getElementById("avisos-promo-timer");
+        if (avisosTimer) avisosTimer.innerText = timeStr;
+    }
+
+    update();
+    promoCountdownInterval = setInterval(update, 1000);
+}
+
+function stopPromoCountdown() {
+    if (promoCountdownInterval) {
+        clearInterval(promoCountdownInterval);
+        promoCountdownInterval = null;
+    }
+    const promoBox = document.getElementById("avisos-promo-box");
+    if (promoBox) promoBox.classList.add("hidden");
 }
 
 function addAnnouncementToLocalHistory(ann) {
