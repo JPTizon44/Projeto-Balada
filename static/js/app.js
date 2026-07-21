@@ -800,6 +800,7 @@ async function pingServer() {
         // 7. Atualizar feed ao vivo na Pista
         if (activeScreen === "screen-dashboard") {
             loadPistaFeed();
+            syncDashboardBubbles();
         }
     } catch (e) {
         console.error("Ping error:", e);
@@ -1030,6 +1031,22 @@ async function setupDashboardBubblesCanvas() {
         
     } catch (e) {
         console.error("Erro ao montar bolhas:", e);
+    }
+}
+
+async function syncDashboardBubbles() {
+    if (!dashboardPhysics) return;
+    try {
+        const res = await fetch(`${API_BASE}/api/users`);
+        const allUsers = await res.json();
+        
+        // Remove a si mesmo das bolhas
+        const otherUsers = allUsers.filter(u => u.id !== currentCupId);
+        
+        // Atualiza a física com os usuários atuais
+        dashboardPhysics.syncUsers(otherUsers);
+    } catch (e) {
+        console.error("Erro ao sincronizar bolhas:", e);
     }
 }
 
